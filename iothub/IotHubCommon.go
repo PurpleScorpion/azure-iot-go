@@ -1,14 +1,14 @@
 package iothub
 
 import (
-	"azure-iot-go/utils"
-	"azure-iot-go/utils/sdk/iothub/models"
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/PurpleScorpion/azure-iot-go/iothub/models"
+	"github.com/PurpleScorpion/azure-iot-go/utils"
 	"io/ioutil"
 	"net/http"
 	"net/url"

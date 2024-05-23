@@ -1,9 +1,9 @@
 package demo
 
 import (
-	"azure-iot-go/utils/sdk/iothub"
-	"azure-iot-go/utils/sdk/iothub/models"
 	"fmt"
+	"github.com/PurpleScorpion/azure-iot-go/iothub"
+	"github.com/PurpleScorpion/azure-iot-go/iothub/models"
 )
 
 func demo1() {
