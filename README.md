@@ -5,11 +5,35 @@
 
 ### 使用方式
 
- - 复制文件
-    - 将utils下的所有文件复制到你的项目中
-     - 注意需要更改包的引用
-     - [IotHubCommon.go] `azure-iot-go/utils` `azure-iot-go/utils/sdk/iothub/models`
-     - 将以上两个包改为复制到你项目后的地址,你的IDE应该会自动更改
+ - 引入包
+    - go get github.com/PurpleScorpion/azure-iot-go
  - 开始使用
    - 使用案例请看demo包下的Demo.go
-   - 里面详细介绍了该sdk的使用方式
+   - 详细介绍
+     - 创建待发送的消息体 
+       ```text
+         js := utils.NewJSONObject()
+         js.FluentPut("check", "gateway")
+         以上为示例 , 只要是个结构体就行
+       ```
+     - 获取连接字符串
+       ```text
+         iotHubConnectionString := "your iot hub connection string"
+       ```
+     - 获取deviceID
+       ```text
+         deviceID := "your iot hub device id"
+       ```
+     - 创建设备客户端
+       ```text
+         deviceClient := iothub.NewDirectMethodsClient(iotHubConnectionString)
+       ```
+     - 设置消息体/超时时间等参数
+       ```text
+         options := iothub.DirectMethodRequestOptionsBuilder(js, 10, 10)
+       ```
+     - 发送消息
+       ```text
+         methodName := "your iot hub method name"
+         response := iothub.Invoke(deviceID, methodName, options, deviceClient)
+       ```
