@@ -10,6 +10,7 @@ import (
 	"github.com/PurpleScorpion/azure-iot-go/iothub/models"
 	"github.com/PurpleScorpion/azure-iot-go/utils"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -68,8 +69,8 @@ func sendPostRequest(httpRequest models.HttpRequest) models.DirectMethodResponse
 
 	result, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
-		return errorDirectMethodResponse(err.Error())
+		log.Println("IotHub Error: " + string(result))
+		return errorDirectMethodResponse(string(result))
 	}
 	js := utils.NewJSONObject()
 	js.ParseObject(string(result))
