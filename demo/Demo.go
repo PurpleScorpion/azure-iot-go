@@ -65,6 +65,35 @@ func InvokeMethod(payload interface{}, methodName string) models.DirectMethodRes
 	return response
 }
 
+/*
+根执行器 , 调用此函数进行Iothub消息发送 - moduleName版
+
+	payload: 消息体, 由BuildIotMsg构建
+	methodName: iothub必要的methodName
+*/
+func InvokeMethod4Module(payload interface{}, methodName string) models.DirectMethodResponse {
+	iotHubConnectionString := getConnectId()
+
+	if isEmpty(iotHubConnectionString) {
+		panic("iotHubConnectionString is empty")
+	}
+
+	deviceID := getDeviceId()
+	if isEmpty(deviceID) {
+		panic("deviceID is empty")
+	}
+
+	// // 创建设备客户端
+	deviceClient := iothub.NewDirectMethodsModuleClient(iotHubConnectionString, "IotHub")
+
+	options := iothub.DirectMethodRequestOptionsBuilder(payload, 10, 10)
+
+	// // 发送方法调用请求
+	response := iothub.Invoke(deviceID, methodName, options, deviceClient)
+	fmt.Println("----------iothub------------", response.Status, response.Payload)
+	return response
+}
+
 func getConnectId() string {
 	iothubConnectIds := "your iothubConnectIds"
 	return iothubConnectIds

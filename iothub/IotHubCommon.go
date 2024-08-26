@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"github.com/PurpleScorpion/azure-iot-go/iothub/models"
 	"github.com/PurpleScorpion/azure-iot-go/utils"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -31,6 +31,20 @@ func NewDirectMethodsClient(iothubConnectId string) models.DirectMethodsClient {
 	return client
 }
 
+func NewDirectMethodsModuleClient(iothubConnectId, moduleName string) models.DirectMethodsClient {
+	if len(iothubConnectId) == 0 {
+		panic("Connection string cannot be null or empty")
+	}
+	if len(moduleName) == 0 {
+		panic("ModuleName cannot be null or empty")
+	}
+	var client models.DirectMethodsClient
+	client.IotHubConnectionString = getIotHubConnectionString(iothubConnectId)
+	client.HostName = client.IotHubConnectionString.HostName
+	client.ModuleName = moduleName
+	return client
+}
+
 func Invoke(iothubDeviceId string, methodName string, options models.DirectMethodRequestOptions, client models.DirectMethodsClient) models.DirectMethodResponse {
 	if len(iothubDeviceId) == 0 {
 		panic("deviceId is empty or null.")
@@ -39,15 +53,15 @@ func Invoke(iothubDeviceId string, methodName string, options models.DirectMetho
 		panic("Payload is empty or null.")
 	}
 
-	url := getUrlMethod(client.HostName, iothubDeviceId)
-	return invokeMethod(url, methodName, options, client)
+	urlStr := getUrlMethod(client, iothubDeviceId)
+	return invokeMethod(urlStr, methodName, options, client)
 }
 
 func invokeMethod(url string, methodName string, options models.DirectMethodRequestOptions, client models.DirectMethodsClient) models.DirectMethodResponse {
-	json := toJson(MethodParserBuilder(methodName, options))
+	jsonStr := toJson(MethodParserBuilder(methodName, options))
 	token := getAuthenticationToken(client.IotHubConnectionString)
 
-	httpRequest := httpRequestBuilder(url, json, token)
+	httpRequest := httpRequestBuilder(url, jsonStr, token)
 	return sendPostRequest(httpRequest)
 }
 
@@ -67,7 +81,7 @@ func sendPostRequest(httpRequest models.HttpRequest) models.DirectMethodResponse
 	}
 	defer resp.Body.Close()
 
-	result, err := ioutil.ReadAll(resp.Body)
+	result, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("IotHub Error: " + string(result))
 		return errorDirectMethodResponse(string(result))
@@ -157,16 +171,18 @@ func toJson(methodParser models.MethodParser) string {
 	return string(jsonString)
 }
 
-func getUrlMethod(hostName string, deviceId string) string {
-	if len(hostName) == 0 {
+func getUrlMethod(client models.DirectMethodsClient, deviceId string) string {
+	if len(client.HostName) == 0 {
 		panic("hostName is empty or null.")
 	}
 	if len(deviceId) == 0 {
 		panic("deviceId is empty or null.")
 	}
-	url := "https://" + hostName + "/" + "twins" + "/" + deviceId + "/" + "methods" + "?" + "api-version=2021-04-12"
-
-	return url
+	if len(client.ModuleName) == 0 {
+		return "https://" + client.HostName + "/" + "twins" + "/" + deviceId + "/methods" + "?" + "api-version=2021-04-12"
+	}
+	//https://<iothubName>.azure-devices.net/twins/<deviceId>/modules/<moduleName>/methods?api-version=2021-04-12
+	return "https://" + client.HostName + "/" + "twins" + "/" + deviceId + "/modules/" + client.ModuleName + "/methods" + "?" + "api-version=2021-04-12"
 }
 
 func getIotHubConnectionString(iothubConnectId string) models.IotHubConnectionString {
@@ -175,7 +191,6 @@ func getIotHubConnectionString(iothubConnectId string) models.IotHubConnectionSt
 	}
 	var connectionString models.IotHubConnectionString
 	connectionString.IotHubConnectionString = iothubConnectId
-	// iothubConnectId := HostName=cooldesign01-ems-iothub02.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=SieJgHehgWVEIyTEuu2xcnUkF1tXmECkfAIoTJ2aRKg=
 	array := strings.Split(iothubConnectId, ";")
 	for _, v := range array {
 		if strings.Contains(v, "HostName=") {
@@ -216,7 +231,6 @@ func getAuthenticationToken(connectionString models.IotHubConnectionString) stri
 	iotHubServiceSasToken.KeyName = connectionString.SharedAccessKeyName
 	iotHubServiceSasToken.ExpiryTimeSeconds = buildExpiresOn(iotHubServiceSasToken.TokenLifespanSeconds)
 	token := buildToken(iotHubServiceSasToken)
-	fmt.Println(token)
 	return token
 }
 
